@@ -1,17 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import socket,sys
 
-# if len(sys.argv) != 5:
-#     print('Missing arguments! Script, servers address, port, req_code, message')
-#     exit()
-# serverName = str(sys.argv[1])
-# port = int(sys.argv[2])
-# code = int(sys.argv[3])
-# msg = str(sys.argv[4])
-serverName = 'localhost'
-serverPort = 12000
-code = 30
+# Gets the arguments from the script
+if len(sys.argv) != 5:
+    print('Missing arguments! Script, servers address, port, req_code, message')
+    exit()
+serverName = str(sys.argv[1])
+serverPort = int(sys.argv[2])
+code = str(sys.argv[3])
+input_msg = str(sys.argv[4])
+
 # client to get the negotation port for the server UTP
 clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 clientSocket.connect((serverName, serverPort))
@@ -28,10 +27,21 @@ if(response == '0'):
 port = int(response)
 clientSocket.close()
 
+# verfied socket client after negotiation UDP
+clientSocket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+clientSocket.connect((serverName,port))
+msg = "GET"
+clientSocket.send(msg.encode())
+msgs = clientSocket.recv(1024).decode()
+# print the messages on different lines
+print ('\n').join(str(m) for m in msgs)
+# Sends the server the current port as part of a string 
+msg = '['+str(port)+']: '+ input_msg
+clientSocket.send(msg.encode())
 
-
-sentence = raw_input('Input lowercase sentence:')
-clientSocket.send(sentence.encode())
-modifiedSentence = clientSocket.recv(1024)
-print('From Server: ', modifiedSentence.decode())
+while True:
+    ex = raw_input('Press any key to exit.')
+    if(ex != ''):
+        clientSocket.close()
+        exit()
 clientSocket.close()
