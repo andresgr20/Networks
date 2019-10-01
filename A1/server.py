@@ -1,63 +1,67 @@
 #!/usr/bin/env python3
 
-import socket,sys
+import socket,sys,_thread
 
 if len(sys.argv) != 2:
     print('Missing the req_code')
     exit()
-code = str(sys.argv[1])
+code = sys.argv[1]
 
 # port for the server
-serverPort = 2019
-negPort = 65534
+serverPort = 20238
+negPort = 1998
 
+#Validation UTP protocol connection
+valSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+valSocket.bind(('localhost', serverPort))
 while True:
-    #Validation UTP protocol connection
-    valSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    valSocket.bind(('localhost', serverPort))
     # listen sets the number of active clients for the server
     # set to 10 for testing
     valSocket.listen(10)
     print('The server is waiting for the client to connect')
     connectionSocket, addr = valSocket.accept()
     msg = connectionSocket.recv(1024).decode()
-    # Terminates the connection if the user enters TERMINATE
+    # If the clients sends the incorrect req_code, deny connection
     if( msg != code):
         response = '0'
         connectionSocket.send(response.encode())
-        print('Invalid req_code from the user.Retry again')
+        print('Invalid req_code from the client. Retry again')
     else:
-        connectionSocket.send(negPort.encode())
-        # Increases the negotation port of the clients
-        negPort=+1
-        connectionSocket.close()
+        connectionSocket.send(str(negPort).encode())
 
         # sets the socket to udp protocol
-        serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DTREAM)
+        serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         serverSocket.bind(('localhost', negPort))
-        # listen sets the number of active clients for the server
-        # set to 10 for testing
-        serverSocket.listen(10)
+        negPort=+1
         print('The server is ready to receive messages')
-        msgs = []
+        msgs = ['[323]: hi','NO MSG.']
         clients = []
         while True:
-            connectionSocket, addr = serverSocket.accept()
-            msg = connectionSocket.recv(1024).decode()
-            if(msg == "GET"):
-                if not msgs: #If there are no messages stored
-                    connectionSocket.send("NO MSG.")
+            #Since we are using UDP, recvfrom would be the correct way to
+            # accept the connection
+            msg, clientAddress= serverSocket.recvfrom(2048)
+            serverMsg = 'NO MSG'
+            if(msg.decode() == 'GET'):
+                for x in msgs:
+                    print(x)
+                    serverSocket.sendto(x.encode(),clientAddress)
+                # sends a flag to say that we do not have anymore messages stored
+                end = 'end'
+                serverSocket.sendto(end.encode(),clientAddress)
+            else:            
+                # Maintains a list of the stored msgs
+                msgs.append(msg)
             # Terminates the connection if the user enters TERMINATE
-            if( 'TERMINATE' in msg):
-                connectionSocket.send('Shutting down server')
+            if( 'TERMINATE' in msg.decode()):
+                serverMsg = 'Shutting down server'
+                serverSocket.sendto(serverMsg.encode(),clientAddress)
                 print('Server shut down')
                 connectionSocket.close()
                 exit()
-            # Maintains a list of the stored msgs
-            msgs.append(msg)
             # Maintains a list of the active clients
-            clients.append(connectionSocket)
+            clients.append(clientAddress)
             connectionSocket.close()
+valSocket.close()
 
 def broadcast_msg(msg, connection):
     for client in clients:

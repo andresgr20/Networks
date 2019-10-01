@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import socket,sys
+import socket,sys,_thread
 
 # Gets the arguments from the script
 if len(sys.argv) != 5:
@@ -8,7 +8,7 @@ if len(sys.argv) != 5:
     exit()
 serverName = str(sys.argv[1])
 serverPort = int(sys.argv[2])
-code = str(sys.argv[3])
+code = sys.argv[3]
 input_msg = str(sys.argv[4])
 
 # client to get the negotation port for the server UTP
@@ -31,17 +31,22 @@ clientSocket.close()
 clientSocket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 clientSocket.connect((serverName,port))
 msg = "GET"
+print('Connected with authentication')
 clientSocket.send(msg.encode())
-msgs = clientSocket.recv(1024).decode()
+msgs = ''
+while True:
+    msgs = clientSocket.recv(2048).decode()
+    # flag to know that we have to more messages to receive
+    if(msgs == 'end'):
+        break
+    print(msgs)
 # print the messages on different lines
-print ('\n').join(str(m) for m in msgs)
 # Sends the server the current port as part of a string 
 msg = '['+str(port)+']: '+ input_msg
 clientSocket.send(msg.encode())
 
 while True:
-    ex = raw_input('Press any key to exit.')
-    if(ex != ''):
-        clientSocket.close()
-        exit()
+    ex = input('Press any key to exit.')
+    clientSocket.close()
+    exit()
 clientSocket.close()
