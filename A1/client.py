@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import socket,sys,_thread
+import socket,sys,_thread, threading
 
 # Gets the arguments from the script
 if len(sys.argv) != 5:
@@ -34,19 +34,17 @@ msg = "GET"
 print('Connected with authentication')
 clientSocket.send(msg.encode())
 msgs = ''
-while True:
-    msgs = clientSocket.recv(2048).decode()
-    # flag to know that we have to more messages to receive
-    if(msgs == 'end'):
-        break
+# prints all the messages from the server
+while msgs != 'NO MSG.':
+    msgs = str(clientSocket.recv(2048).decode('utf-8'))
     print(msgs)
-# print the messages on different lines
+
 # Sends the server the current port as part of a string 
 msg = '['+str(port)+']: '+ input_msg
 clientSocket.send(msg.encode())
 
 while True:
-    ex = input('Press any key to exit.')
+    ex = input('Press any key and press enter to exit.')
     clientSocket.close()
     exit()
 clientSocket.close()

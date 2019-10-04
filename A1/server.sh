@@ -1,1 +1,1 @@
-<your server here> $1
+./server.py $1
