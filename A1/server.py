@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import socket,sys,thread, random, threading,os
+import socket,sys,_thread, random, threading,os
 
 # port for the server
 serverPort = 20238
@@ -29,7 +29,7 @@ def bootup_server(valSocket, code):
             # creates a port number
             negPort = randomize()
             # creates another thread if we have other users trying to obtain the resources
-            thread.start_new_thread(bootup_server,(valSocket,code,))
+            _thread.start_new_thread(bootup_server,(valSocket,code,))
             #sends the port number to the client
             connectionSocket.send(str(negPort).encode())
             # sets the socket to udp protocol
@@ -54,8 +54,8 @@ def bootup_server(valSocket, code):
                 # Terminates the connection if the user enters TERMINATE
                 if( 'TERMINATE' in msg):
                     print('Server shut down')
-                    connectionSocket.close()
-                    exit()
+                    # Use os exit to kill all the different threads and exit the program
+                    os._exit(0)
                 connectionSocket.close()
 
 

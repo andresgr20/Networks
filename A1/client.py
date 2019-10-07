@@ -48,7 +48,7 @@ clientSocket.send(msg.encode())
 
 # prompts the user to press a key to kill the client
 while True:
-    ex = raw_input('Press any key and press enter to exit.')
+    ex = input('Press any key and press enter to exit.')
     clientSocket.close()
     exit()
 clientSocket.close()
