@@ -2,6 +2,7 @@
 
 import socket,sys,_thread, random, threading,os, pickle
 from files import Files
+import struct
 
 # port for the server
 serverPort = 20238
@@ -56,13 +57,43 @@ def peer_downloaded():
     msg = "PEER" + peer + "ACQUIRED: CHUNK " + chunk + "/" + chunk_total(file_name) + " " + file_name
     print(msg)
 
-def peer_disconnect():
-    files_received = 3
-    file_name = 'hi'
-    msg = "PEER " + peer + "DISCONNECT: RECEIVED " + files_received
+def find_files_owned(p):
+    f = []
+    for i in files:
+        if(p in i.get_owners()):
+            f.append(i.get_name())
+    return f
+
+def remove_owner(p):
+    for i in files:
+        if(p in i.get_owners()):
+            i.remove_owner(p)
+
+def peer_disconnect(p):
+    owned = find_files_owned(p)
+    msg = "PEER " + str(p) + " DISCONNECT: RECEIVED " + str(len(owned))
     print(msg)
-    msg_files = peer + "    " + file_name
-    print(msg_files)
+    for i in owned:
+        print(str(p) + "    " + i)
+
+def send_one_message(sock, data):
+    length = len(data)
+    sock.sendall(struct.pack('!I', length))
+    sock.sendall(data)
+
+def recv_one_message(sock):
+    lengthbuf = recvall(sock, 4)
+    length, = struct.unpack('!I', lengthbuf)
+    return recvall(sock, length)
+
+def recvall(sock, count):
+    buf = b''
+    while count:
+        newbuf = sock.recv(count)
+        if not newbuf: return None
+        buf += newbuf
+        count -= len(newbuf)
+    return buf
 
 # Need to fix the creation of the initial array of data
 def bootup_tracker():
@@ -78,6 +109,8 @@ def bootup_tracker():
     print('Waiting for connections + Info from the peer')
     connectionSocket, addr = peerSocket.accept()
     connectionSocket.send(unique_assign().encode())
+    if(peer not in peers and not peers):
+        new_arrival(connectionSocket)
     peers.append(peer)
     data.append(peer)
     # The array is forming weird need to fix, everything is merging into one big thing
@@ -86,9 +119,8 @@ def bootup_tracker():
         if not d: break
         data.append(d)
     print(data)
-    files.append(Files(63900, 126,'Screen Shot 2019-11-26 at 1.22.04 PM.png','localhost',38438))
-    peer_connect(peer,1)
-    return
+    files.append(Files(63900, 126,'Screen Shot 2019-11-26 at 1.22.04 PM.png','localhost',38438,peer))
+    # peer_connect(peer,1)
 
     # connectionSocket, addr = peerSocket.accept()
     
@@ -102,6 +134,10 @@ def bootup_tracker():
     #         data = []
     #         break 
     
+
+def new_arrival(s):
+    msg = "200"
+    s.send(msg.encode())
 
 if __name__ == '__main__':
     bootup_tracker()
